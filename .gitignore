@@ -1,0 +1,10 @@
+/*.md
+/*.tex
+/*.out
+/*.aux
+/*.pdf
+/*.log
+/*.yaml
+/dist-newstyle/*
+/tmp/*
+/cv
