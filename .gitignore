@@ -9,4 +9,5 @@
 /tmp/*
 /cv
 /cv-gen
+/my_cvs/*
 !/README.md

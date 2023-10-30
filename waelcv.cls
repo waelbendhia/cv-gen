@@ -207,12 +207,22 @@ Ligatures={TeX, NoCommon, NoDiscretionary}]{\mainfontface}
 \linkedin{}
 
 
+% \newcommand\printcontacts{
+%   \small{\textbf{Email:}\nolinebreak\space\href{mailto:\@email}{\@email}}
+%   \linebreak
+%   \small{\textbf{LinkedIn:}\nolinebreak\space\href{https://linkedin.com/in/\@linkedin}{\@linkedin}}
+%   \linebreak
+%   \small{\textbf{GitHub:}\nolinebreak\space\href{https://github.com/\@github}{\@github}}
+% }
+
 \newcommand\printcontacts{
-  \small{\textbf{Email:}\nolinebreak\space\href{mailto:\@email}{\@email}}
-  \linebreak
-  \small{\textbf{LinkedIn:}\nolinebreak\space\href{https://linkedin.com/in/\@linkedin}{\@linkedin}}
-  \linebreak
-  \small{\textbf{GitHub:}\nolinebreak\space\href{https://github.com/\@github}{\@github}}
+  \begin{small}
+  \begin{tabu} to 1\linewidth { X[r,m] X[l,m] }
+    \textbf{Email}    & \href{mailto:\@email}{\@email} \\
+    \textbf{LinkedIn} & \href{https://linkedin.com/in/\@linkedin}{\@linkedin} \\
+    \textbf{GitHub}   & \href{https://github.com/\@github}{\@github} \\
+  \end{tabu}
+  \end{small}
 }
 
 \makeatother
@@ -240,6 +250,12 @@ Ligatures={TeX, NoCommon, NoDiscretionary}]{\mainfontface}
 }{}
 \makeatother
 
+% Lists
+\makeatletter
+\newcommand{\rowlist}[2]{
+  \textbf{\color{subheading}#1: }{#2}
+}{}
+\makeatother
 
 % Print a section header
 \makeatletter
@@ -307,3 +323,5 @@ Ligatures={TeX, NoCommon, NoDiscretionary}]{\mainfontface}
   \vspace*{\aftersubsectionspace}
 }
 \makeatother
+
+\sloppy

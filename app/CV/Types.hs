@@ -5,6 +5,70 @@ import Data.Aeson.TH (deriveFromJSON)
 import Optics
 import Relude
 
+data Technology
+    = Angular
+    | AntDesign
+    | Consul
+    | Docker
+    | DockerCompose
+    | ExpressJS
+    | Flow
+    | Go
+    | Haskell
+    | Java
+    | NGINX
+    | NSQ
+    | NodeJS
+    | OpenTracing
+    | PostgreSQL
+    | Prisma
+    | React
+    | ReactQuery
+    | Redux
+    | ReduxSaga
+    | Remix
+    | SMTP
+    | SOAP
+    | SpringBoot
+    | StyledComponents
+    | Typescript
+    | Vault
+    deriving (Show, Bounded, Enum, Eq, Ord)
+
+instance ToText Technology where
+    toText Angular = "Angular"
+    toText AntDesign = "Ant Design"
+    toText Consul = "Consul"
+    toText Docker = "Docker"
+    toText DockerCompose = "Docker Compose"
+    toText ExpressJS = "ExpressJS"
+    toText Flow = "Flow"
+    toText Go = "Go"
+    toText Haskell = "Haskell"
+    toText Java = "Java"
+    toText NGINX = "NGINX"
+    toText NSQ = "NSQ"
+    toText NodeJS = "NodeJS"
+    toText OpenTracing = "OpenTracing"
+    toText PostgreSQL = "PostgreSQL"
+    toText Prisma = "Prisma"
+    toText React = "React"
+    toText ReactQuery = "React Query"
+    toText Redux = "Redux"
+    toText ReduxSaga = "Redux Saga"
+    toText Remix = "Remix"
+    toText SMTP = "SMTP"
+    toText SOAP = "SOAP"
+    toText SpringBoot = "Spring Boot"
+    toText StyledComponents = "Styled Components"
+    toText Typescript = "Typescript"
+    toText Vault = "Vault"
+
+instance FromJSON Technology where
+    parseJSON =
+        withText "Technology" \t ->
+            maybe (fail $ "Unknown tech " <> toString t) pure $ inverseMap toText t
+
 data Link = Link {title :: Text, url :: Text}
     deriving (Show)
 
@@ -15,7 +79,7 @@ data Project = Project
     { title :: Text
     , priority :: Int
     , description :: Text
-    , technologies :: [Text]
+    , technologies :: [Technology]
     , links :: [Link]
     , outcome :: Maybe Text
     }

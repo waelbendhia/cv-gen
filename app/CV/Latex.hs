@@ -4,14 +4,13 @@ module CV.Latex (
     RenderOptions (..),
     IncludeOption (..),
     includeOptionFromText,
-    fullOptions,
-    shortOptions,
+    orientationFromText,
     defaultOptions,
 ) where
 
 import CV.Types
-import Data.Aeson hiding (defaultOptions)
-import Data.Text as Text hiding (elem, head, intersperse, lines, span, takeWhile, unlines)
+import Data.Set hiding (filter, fromList, toList)
+import Data.Text as Text hiding (any, elem, filter, head, intersperse, lines, span, takeWhile, unlines)
 import Optics
 import Relude hiding (intercalate)
 import Text.LaTeX hiding (lines, unlines, (&))
@@ -28,18 +27,34 @@ includeOptionFromText text =
         "none" -> pure None
         t -> fail $ "Unknown IncludeOption value " <> toString t
 
-instance FromJSON IncludeOption where
-    parseJSON = optionFromString <> optionFromBool
-      where
-        optionFromBool = withBool "IncludeOption" \includeOption ->
-            pure $ if includeOption then Short else Long
-        optionFromString = withText "IncludeOption" includeOptionFromText
+data Orientation = Either | FrontEnd | BackEnd
+    deriving (Show, Eq)
+
+orientationFromText :: (MonadFail m) => Text -> m Orientation
+orientationFromText text =
+    case toLower text of
+        "either" -> pure Either
+        "front" -> pure FrontEnd
+        "back" -> pure BackEnd
+        t -> fail $ "Unknown Orientation value " <> toString t
+
+isWithinOrientation :: Orientation -> Technology -> Bool
+isWithinOrientation orientation tech =
+    case orientation of
+        Either -> True
+        FrontEnd -> tech `member` frontEndTech
+        BackEnd -> not $ tech `member` frontEndTech
+  where
+    frontEndTech =
+        fromList
+            [Angular, AntDesign, React, ReactQuery, Redux, ReduxSaga, Remix, Typescript]
 
 data RenderOptions = RenderOptions
     { includeAbout :: IncludeOption
     , includeProjects :: IncludeOption
     , excludedProjects :: [Text]
     , minimumPriority :: Int
+    , orientation :: Orientation
     }
     deriving (Show)
 
@@ -52,24 +67,7 @@ defaultOptions =
         , includeProjects = Short
         , excludedProjects = []
         , minimumPriority = 2
-        }
-
-fullOptions :: RenderOptions
-fullOptions =
-    RenderOptions
-        { includeAbout = Long
-        , includeProjects = Long
-        , excludedProjects = []
-        , minimumPriority = 0
-        }
-
-shortOptions :: RenderOptions
-shortOptions =
-    RenderOptions
-        { includeAbout = None
-        , includeProjects = None
-        , excludedProjects = []
-        , minimumPriority = 0
+        , orientation = Either
         }
 
 textT :: (LaTeXC l) => Text -> l
@@ -124,9 +122,7 @@ itemized :: (Monad m) => [LaTeXT_ m] -> LaTeXT_ m
 itemized = itemize . mapM_ (comm0 "item" *>)
 
 renderSkill :: forall m. (Monad m) => Text -> [Text] -> LaTeXT_ m
-renderSkill name sks = do
-    textbf $ textT (name <> ": ")
-    renderList sks
+renderSkill name = comm2 "rowlist" (textT name) . renderList
   where
     renderList :: [Text] -> LaTeXT_ m
     renderList l = sequence_ $ intersperse ", " $ textT <$> l
@@ -158,12 +154,21 @@ renderGeneral gi = do
 
 renderProject :: forall m. (MonadReader RenderOptions m) => Project -> LaTeXT_ m
 renderProject p = do
+    orientation <- lift $ asks (view #orientation)
     shouldIncludeProjects <- lift $ asks (view #includeProjects)
     minPriority <- lift $ asks (view #minimumPriority)
     excluded <- lift $ asks (view #excludedProjects)
-    let shouldSkip =
+    let projectPriority =
+            p ^. #priority
+                + case orientation of
+                    Either -> 0
+                    _ ->
+                        if any (isWithinOrientation orientation) (p ^. #technologies)
+                            then 1
+                            else -1
+        shouldSkip =
             (p ^. #title) `elem` excluded
-                || (p ^. #priority) < minPriority
+                || projectPriority < minPriority
                 || shouldIncludeProjects == None
     unless shouldSkip $ project do
         renderBlock (p ^. #description)

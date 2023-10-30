@@ -15,6 +15,7 @@ optionsParser =
         <*> includeOption "projects" 'p'
         <*> pure []
         <*> minPriority
+        <*> orientation
   where
     includeOptionReadM = includeOptionFromText =<< str
     includeOption longArg shortArg =
@@ -22,6 +23,13 @@ optionsParser =
             long longArg
                 <> short shortArg
                 <> value (defaultOptions ^. #includeAbout)
+                <> showDefault
+    orientationReadM = orientationFromText =<< str
+    orientation =
+        option orientationReadM $
+            long "orientation"
+                <> short 'o'
+                <> value (defaultOptions ^. #orientation)
                 <> showDefault
     minPriority = option auto $ long "priority" <> showDefault <> value 1
 
