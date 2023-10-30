@@ -24,30 +24,16 @@
 
 % Set up the fonts according to options
 \def\mainfontsize{11pt}
-\def\mainfontface{Iosevka Nerd Font Propo}
+\def\mainfontface{Iosevka Aile}
 
 \DeclareOption{calibri}{%
   \def\mainfontface{Calibri}
 }
 
-% Set up papersize according to options, default to US letter
-\def\papersize{letterpaper}
-%Set up bool for adjusting vspacing later
-\newif\ifpapersize
-
-\DeclareOption{a4paper}{%
-  \def\papersize{a4paper}
-  \papersizetrue
-}
-
-\DeclareOption{letterpaper}{%
-  \def\papersize{letterpaper}
-  \papersizefalse
-}
 \ProcessOptions\relax
 
 % Set font size and paper type
-\LoadClass[\papersize,\mainfontsize]{article}
+\LoadClass[a4paper,\mainfontsize]{article}
 
 % Disable wordbreaks
 \usepackage[none]{hyphenat}
@@ -75,8 +61,8 @@
 
 % Set font face
 \usepackage{fontspec}
-\setmainfont[SmallCapsFeatures={Renderer=Basic},
-Ligatures={TeX, NoCommon, NoDiscretionary}]{\mainfontface}
+\defaultfontfeatures{LetterSpace=-3}
+\setmainfont{\mainfontface}
 
 % Remove paragraph indentation
 \usepackage[parfill]{parskip}
@@ -102,10 +88,6 @@ Ligatures={TeX, NoCommon, NoDiscretionary}]{\mainfontface}
 % separation to a negative value to suppress a single parskip before lists
 \setlist{leftmargin=*, label={}}
 
-% For adjusting spacing based on the platform used
-\usepackage{ifthen}
-\usepackage{ifplatform}
-
 % For spcaed small caps
 \usepackage{microtype}
 
@@ -118,49 +100,20 @@ Ligatures={TeX, NoCommon, NoDiscretionary}]{\mainfontface}
 %                                   Constants                                   -
 %--------------------------------------------------------------------------------
 
-\ifthenelse{\equal{\platformname}{\notwindowsname}}{
-  \def\namespaceskip{0.575em}
-  \def\afterheaderspace{1.1pt}
-  \def\beforesectionheaderspace{5pt}
-  \def\sectionheadermargin{6pt}
-  \def\beforesectionheaderhrulespace{2.85pt}
-  \def\sectionheaderhrlueheight{0.518pt}
-  \def\aftersectionheaderspace{0pt}
-  % \def\aftersectionheaderspace{-5.8pt}
+\def\namespaceskip{0.575em}
+\def\afterheaderspace{1.1pt}
+\def\beforesummaryspace{10pt}
+\def\beforesectionheaderspace{5pt}
+\def\sectionheadermargin{6pt}
+\def\beforesectionheaderhrulespace{2.85pt}
+\def\sectionheaderhrlueheight{0.518pt}
+\def\aftersectionheaderspace{0pt}
 
-  \ifpapersize
-    \def\aftersinglelinesubsectionheaderspace{-5.75pt}
-  \else
-    \def\aftersinglelinesubsectionheaderspace{-20.25pt}
-  \fi
+\def\aftersubsectionheaderspace{-20.25pt}
 
-  \def\afterdoublelinesubsectionheaderspace{-11.75pt}
-  \def\aftermultilinesubsectionheaderspace{-7.75pt}
-  \def\afteremptysubsectionheaderspace{1.25pt}
-  \def\subsectionmargin{9pt}
-  \def\projectmargin{12pt}
-  \def\aftersubsectionspace{2.1pt}
-}{
-  \def\namespaceskip{0.4em}
-  \def\afterheaderspace{3pt}
-  \def\beforesectionheaderspace{4.75pt}
-  \def\sectionheadermargin{6pt}
-  \def\beforesectionheaderhrulespace{3pt}
-  \def\sectionheaderhrlueheight{0.5pt}
-  \def\aftersectionheaderspace{-4pt}
-
-  \ifpapersize
-    \def\aftersinglelinesubsectionheaderspace{-4pt}
-  \else
-    \def\aftersinglelinesubsectionheaderspace{-18.5pt}
-  \fi
-
-  \def\afterdoublelinesubsectionheaderspace{-10pt}
-  \def\aftermultilinesubsectionheaderspace{-6pt}
-  \def\afteremptysubsectionheaderspace{3pt}
-  \def\subsectionmargin{9pt}
-  \def\aftersubsectionspace{4pt}
-}
+\def\subsectionmargin{9pt}
+\def\projectmargin{12pt}
+\def\aftersubsectionspace{2.1pt}
 
 %--------------------------------------------------------------------------------
 %                            Header Setup and Printing                          -
@@ -183,7 +136,7 @@ Ligatures={TeX, NoCommon, NoDiscretionary}]{\mainfontface}
   \typeout {kokoko}
   \typeout \spaceskip
   \spaceskip \namespaceskip \relax
-  \textbf{\LARGE\textls[110]{\textsc{\@name}}}
+  \textbf{\LARGE\textls[110]{\@name}}
   \linebreak
   \@phonenumber
   \linebreak
@@ -206,22 +159,16 @@ Ligatures={TeX, NoCommon, NoDiscretionary}]{\mainfontface}
 \newcommand\linkedin[1]{\def\@linkedin{#1}}
 \linkedin{}
 
-
-% \newcommand\printcontacts{
-%   \small{\textbf{Email:}\nolinebreak\space\href{mailto:\@email}{\@email}}
-%   \linebreak
-%   \small{\textbf{LinkedIn:}\nolinebreak\space\href{https://linkedin.com/in/\@linkedin}{\@linkedin}}
-%   \linebreak
-%   \small{\textbf{GitHub:}\nolinebreak\space\href{https://github.com/\@github}{\@github}}
-% }
-
 \newcommand\printcontacts{
   \begin{small}
-  \begin{tabu} to 1\linewidth { X[r,m] X[l,m] }
-    \textbf{Email}    & \href{mailto:\@email}{\@email} \\
-    \textbf{LinkedIn} & \href{https://linkedin.com/in/\@linkedin}{\@linkedin} \\
-    \textbf{GitHub}   & \href{https://github.com/\@github}{\@github} \\
-  \end{tabu}
+    \begin{tabu} to 1\linewidth { X[r,m] X[l,m] }
+      % \textbf{󰇯 }    & \href{mailto:\@email}{\@email} \\
+      % \textbf{ } & \href{https://linkedin.com/in/\@linkedin}{\@linkedin} \\
+      % \textbf{ }   & \href{https://github.com/\@github}{\@github} \\
+      \textbf{Email}    & \href{mailto:\@email}{\@email} \\
+      \textbf{LinkedIn} & \href{https://linkedin.com/in/\@linkedin}{\@linkedin} \\
+      \textbf{GitHub}   & \href{https://github.com/\@github}{\@github} \\
+    \end{tabu}
   \end{small}
 }
 
@@ -245,8 +192,7 @@ Ligatures={TeX, NoCommon, NoDiscretionary}]{\mainfontface}
 % IntroBlock
 \makeatletter
 \newenvironment{summary}[0]{
-  \vspace*{\beforesectionheaderspace}
-  \vspace*{\beforesectionheaderspace}
+  \vspace*{\beforesummaryspace}
 }{}
 \makeatother
 
@@ -263,7 +209,7 @@ Ligatures={TeX, NoCommon, NoDiscretionary}]{\mainfontface}
   \vspace*{\beforesectionheaderspace}
   % Set text margins to equal \tabcolsep (6pt by default)
   \begin{adjustwidth}{\sectionheadermargin}{\sectionheadermargin}
-    \textsc{\color{subheading}\textbf{#1}}
+    \textbf{\color{subheading}#1}
   \end{adjustwidth}
   \vspace*{\beforesectionheaderhrulespace}
   \hrule height \sectionheaderhrlueheight
@@ -277,9 +223,9 @@ Ligatures={TeX, NoCommon, NoDiscretionary}]{\mainfontface}
 \newenvironment{project}[2]{
   \par
   \begin{tabu} to 1\linewidth { X[l,p] X[r,p] }
-    \textsc{\color{subheading}\textbf{#1}} & #2 \\
+    \textbf{\color{subheading}#1} & #2 \\
   \end{tabu}
-  \vspace*{\aftersinglelinesubsectionheaderspace}
+  \vspace*{\aftersubsectionheaderspace}
   \begin{adjustwidth}{\projectmargin}{\projectmargin}
 }{
   \end{adjustwidth}
@@ -288,34 +234,14 @@ Ligatures={TeX, NoCommon, NoDiscretionary}]{\mainfontface}
 
 % Print a subsection
 \makeatletter
-% Define toggles checking if titles were defined
-\newtoggle{lefttitledefined}
-\newtoggle{centertitledefined}
-\newtoggle{righttitledefined}
 
-\newenvironment{cvsubsection}[4][1]{
-  \notblank{#2}{\toggletrue{lefttitledefined}}{}
-  \notblank{#3}{\toggletrue{centertitledefined}}{}
-  \notblank{#4}{\toggletrue{righttitledefined}}{}
-  \ifboolexpr{togl {lefttitledefined} or togl {centertitledefined} or togl {righttitledefined}}{
-    {
-      \color{subheading}
-      \begin{tabu} to 1\textwidth { X[l,p] X[c,p] X[r,p] }
-        \textbf{#2} & \textbf{#3} & \textbf{#4} \\
-      \end{tabu}
-    }
-    % Add space according to the specidied number of lines
-    \ifnumcomp{#1}{=}{1}{\vspace*{\aftersinglelinesubsectionheaderspace}}{
-      \ifnumcomp{#1}{=}{2}{\vspace*{\afterdoublelinesubsectionheaderspace}}{
-        \vspace*{\aftermultilinesubsectionheaderspace}
-      }
-    }
-  }{
-    \vspace*{\afteremptysubsectionheaderspace}
-  }
-  \togglefalse{lefttitledefined}
-  \togglefalse{centertitledefined}
-  \togglefalse{righttitledefined}
+\newenvironment{cvsubsection}[3]{
+  \color{subheading}
+  \begin{tabu} to 1\textwidth { X[l,p] X[c,p] X[r,p] }
+    \textbf{#1} & \textbf{#2} & \textbf{#3} \\
+  \end{tabu}
+  % Add space according to the specidied number of lines
+  \vspace*{\aftersubsectionheaderspace}
   \begin{adjustwidth}{\subsectionmargin}{\subsectionmargin}
 }
 {
