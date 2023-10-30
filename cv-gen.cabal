@@ -1,5 +1,5 @@
 cabal-version:   2.2
-name:            cv
+name:            cv-gen
 version:         0.1.0.0
 
 -- synopsis:
@@ -19,7 +19,7 @@ extra-doc-files: CHANGELOG.md
 common warnings
   ghc-options: -Wall
 
-executable cv
+executable cv-gen
   import:             warnings
   main-is:            Main.hs
   other-modules:
