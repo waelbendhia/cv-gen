@@ -216,7 +216,6 @@ renderEducation es = cvSection "Education" $ forM_ es \e -> do
 renderCVToLatex :: (MonadReader RenderOptions m) => CV -> LaTeXT_ m
 renderCVToLatex cv = do
     documentclass [] "waelcv"
-    comm0 "sloppy"
     renderHeader $ cv ^. #generalInfo
     comm1 "begin" "document"
     comm0 "makeheader"

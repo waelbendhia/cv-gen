@@ -50,6 +50,7 @@ executable cv-gen
     , optparse-applicative
     , process
     , relude
+    , template-haskell
     , yaml
 
   hs-source-dirs:     app

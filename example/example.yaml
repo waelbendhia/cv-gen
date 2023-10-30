@@ -1,0 +1,84 @@
+generalInfo:
+  fullname: Person Person
+  phonenumber: "+123456789"
+  address: City, Country
+  email: person@email.com
+  linkedIn: person
+  github: person
+  about:
+    short: |
+      I am a person, I often do things.
+    long : |
+      I am a person, I often do things. Sometimes I do these things well, sometimes I do these things poorly but I do the things I am meant to do.
+  skills:
+    programmingLanguages:
+      - Brainfuck
+      - HolyC
+    tools:
+      - Git
+      - Ed
+    languages:
+      - Coptic (native)
+      - Cornish (native)
+
+workExperience:
+  - company: Things Inc.
+    jobTitle: Senior Doer of Things
+    start: January 2020
+    roleDescription: |
+      I did things seniorly. I also helped others do things.
+    projects:
+      - title: Unimportant Thing
+        priority: 0
+        description: I did the thing but it was unimportant.
+        outcome: The thing got done, no one was impressed.
+        technologies:
+          - Shovel
+      - title: Mildly Important Thing
+        priority: 1
+        description: I did the thing that some might say was important.
+        outcome: People told me I did a good job.
+        technologies:
+          - CNC Machine
+      - title: Important Thing
+        priority: 2
+        description: I did the thing that every one agreed was important
+        outcome: Everyone was impressed.
+        technologies:
+          - Chisel
+          - Hammer
+
+  - company: Stuff Inc.
+    jobTitle: Junior Doer of Things
+    roleDescription: I got told to do things and I did them.
+    start: January 2000 
+    end: January 2020
+    projects:
+      - title: Stuff
+        priority: 1
+        description: Kinda just did stuff.
+        outcome: Stuff got done.
+        technologies:
+          - Hands
+
+personalProjects:
+  - title: Thing I did on my own time
+    priority: 2
+    links:
+      - title: Website
+        url: https://www.mything.io
+    description: I had stuff I needed to do and I did it.
+    technologies:
+      - Rock
+
+education:
+  - school: School of Things
+    city: Paris, France
+    start: 2008
+    end: 2010
+    degree: Master's Degree in doing things
+  - school: School of Things
+    city: Paris, France
+    start: 2005
+    end: 2008
+    degree: Bachelor's Degree in doing things

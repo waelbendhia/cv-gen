@@ -32,5 +32,5 @@ main :: IO ()
 main = do
     (fn, opts) <- execParser $ info (fullParser <**> helper) fullDesc
     res <- Yaml.decodeFileThrow fn
-    output <- runLuaLatex "./tmp" "cv" $ encodeUtf8 $ render $ renderCV opts res
+    output <- runLuaLatex "./tmp" fn $ encodeUtf8 $ render $ renderCV opts res
     print output

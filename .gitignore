@@ -8,3 +8,5 @@
 /dist-newstyle/*
 /tmp/*
 /cv
+/cv-gen
+!/README.md
