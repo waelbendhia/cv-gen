@@ -1,0 +1,56 @@
+cabal-version:   2.2
+name:            cv
+version:         0.1.0.0
+
+-- synopsis:
+-- description:
+license:         BSD-2-Clause
+license-file:    LICENSE
+author:          Wael Ben Dhia
+maintainer:      waelbendhia@gmail.com
+
+-- copyright:
+category:        Text
+build-type:      Simple
+extra-doc-files: CHANGELOG.md
+
+-- extra-source-files:
+
+common warnings
+  ghc-options: -Wall
+
+executable cv
+  import:             warnings
+  main-is:            Main.hs
+  other-modules:
+    CV.Latex
+    CV.LuaLatex
+    CV.Types
+
+  default-extensions:
+    NoImplicitPrelude
+    BlockArguments
+    DataKinds
+    DuplicateRecordFields
+    OverloadedLabels
+    OverloadedStrings
+    TemplateHaskell
+    TypeFamilies
+    UndecidableInstances
+
+  build-depends:
+    , aeson
+    , base                  ^>=4.16.4.0
+    , bytestring
+    , directory
+    , filepath
+    , HaTeX
+    , optics
+    , optics-th
+    , optparse-applicative
+    , process
+    , relude
+    , yaml
+
+  hs-source-dirs:     app
+  default-language:   GHC2021
