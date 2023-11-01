@@ -3,16 +3,19 @@ module CV.Latex (
     renderCV,
     RenderOptions (..),
     IncludeOption (..),
+    AboutLength (..),
+    ProjectLength (..),
     includeOptionFromText,
-    orientationFromText,
+    projectSectionFromText,
     defaultOptions,
 ) where
 
 import CV.Types
-import Data.Set hiding (filter, fromList, toList)
-import Data.Text as Text hiding (any, elem, filter, head, intersperse, lines, span, takeWhile, unlines)
+import Data.Text qualified as Text
 import Optics
-import Relude hiding (intercalate)
+import Polysemy
+import Polysemy.Reader
+import Relude hiding (Reader, ask, asks, intercalate, runReader)
 import Text.LaTeX hiding (lines, unlines, (&))
 import Text.LaTeX.Base.Class
 
@@ -21,40 +24,33 @@ data IncludeOption = None | Short | Long
 
 includeOptionFromText :: (MonadFail f) => Text -> f IncludeOption
 includeOptionFromText text =
-    case toLower text of
+    case Text.toLower text of
         "short" -> pure Short
         "long" -> pure Long
         "none" -> pure None
         t -> fail $ "Unknown IncludeOption value " <> toString t
 
-data Orientation = Either | FrontEnd | BackEnd
-    deriving (Show, Eq)
+data ProjectSection = InWorkExperience | Standalone deriving (Show, Eq)
 
-orientationFromText :: (MonadFail m) => Text -> m Orientation
-orientationFromText text =
-    case toLower text of
-        "either" -> pure Either
-        "front" -> pure FrontEnd
-        "back" -> pure BackEnd
-        t -> fail $ "Unknown Orientation value " <> toString t
+projectSectionFromText :: (MonadFail m) => Text -> m ProjectSection
+projectSectionFromText text =
+    case Text.toLower text of
+        "inworkexperience" -> pure InWorkExperience
+        "workexperience" -> pure InWorkExperience
+        "employment" -> pure InWorkExperience
+        "standalone" -> pure Standalone
+        "alone" -> pure Standalone
+        "seperate" -> pure Standalone
+        t -> fail $ "Unknown ProjectSection value " <> toString t
 
-isWithinOrientation :: Orientation -> Technology -> Bool
-isWithinOrientation orientation tech =
-    case orientation of
-        Either -> True
-        FrontEnd -> tech `member` frontEndTech
-        BackEnd -> not $ tech `member` frontEndTech
-  where
-    frontEndTech =
-        fromList
-            [Angular, AntDesign, React, ReactQuery, Redux, ReduxSaga, Remix, Typescript]
+newtype AboutLength = AboutLength IncludeOption deriving (Show)
+newtype ProjectLength = ProjectLength IncludeOption deriving (Show)
 
 data RenderOptions = RenderOptions
-    { includeAbout :: IncludeOption
-    , includeProjects :: IncludeOption
-    , excludedProjects :: [Text]
+    { aboutLength :: AboutLength
+    , projectLength :: ProjectLength
     , minimumPriority :: Int
-    , orientation :: Orientation
+    , projectSection :: ProjectSection
     }
     deriving (Show)
 
@@ -63,12 +59,62 @@ makeFieldLabelsNoPrefix ''RenderOptions
 defaultOptions :: RenderOptions
 defaultOptions =
     RenderOptions
-        { includeAbout = Short
-        , includeProjects = Short
-        , excludedProjects = []
+        { aboutLength = coerce Short
+        , projectLength = coerce Short
         , minimumPriority = 2
-        , orientation = Either
+        , projectSection = Standalone
         }
+
+newtype AboutSection = AboutSection (Maybe Text)
+
+runAboutReader :: RenderOptions -> CV -> Sem (Reader AboutSection : r) b -> Sem r b
+runAboutReader opts cv =
+    let about' = cv ^. #generalInfo % #about
+     in runReader
+            ( AboutSection
+                case opts ^. #aboutLength % coerced of
+                    None -> Nothing
+                    Long -> about' ^. #long
+                    Short -> about' ^. #short
+            )
+
+runWorkExperiencesReader ::
+    RenderOptions ->
+    CV ->
+    Sem (Reader [WorkExperience] : r) a ->
+    Sem r a
+runWorkExperiencesReader opts cv =
+    runReader
+        (withLen $ filterProjects $ cv ^. #workExperience)
+  where
+    withLen =
+        case (opts ^. #projectLength % coerced, opts ^. #projectSection) of
+            (_, Standalone) -> traversed % #projects .~ []
+            (None, _) -> traversed % #projects .~ []
+            (Short, _) -> traversed % #projects % traversed % #technologies .~ []
+            (Long, _) -> id
+    filterProjects =
+        traversed % #projects %~ filter \p -> p ^. #priority >= opts ^. #minimumPriority
+
+data Projects = Projects
+    { personal :: [Project]
+    , professional :: [Project]
+    }
+
+runProjectsReader :: RenderOptions -> CV -> Sem (Reader Projects : r) a -> Sem r a
+runProjectsReader opts cv = runReader projects
+  where
+    filterByPriority = filter \p -> p ^. #priority >= opts ^. #minimumPriority
+    withLen ps = case opts ^. #projectLength % coerced of
+        None -> []
+        Short -> ps & traversed % #technologies .~ []
+        Long -> ps
+    projects =
+        (Projects `on` withLen . filterByPriority)
+            (cv ^. #personalProjects)
+            case opts ^. #projectSection of
+                InWorkExperience -> []
+                Standalone -> join $ cv ^.. #workExperience % traversed % #projects
 
 textT :: (LaTeXC l) => Text -> l
 textT = fromString . toString
@@ -110,13 +156,10 @@ renderBlock t = lByl $ lines t
             lByl xs
     lByl [] = pass
 
-renderAboutSection :: forall m. (MonadReader RenderOptions m) => About -> LaTeXT_ m
-renderAboutSection about = do
-    options <- lift $ ask @RenderOptions
-    mapM_ (summary . renderBlock) case options ^. #includeAbout of
-        None -> Nothing
-        Short -> about ^. #short
-        Long -> about ^. #long
+renderAboutSection :: (Members '[Reader AboutSection] r) => LaTeXT_ (Sem r)
+renderAboutSection = do
+    (aboutSection :: Maybe Text) <- lift $ asks @AboutSection coerce
+    mapM_ (summary . renderBlock) aboutSection
 
 itemized :: (Monad m) => [LaTeXT_ m] -> LaTeXT_ m
 itemized = itemize . mapM_ (comm0 "item" *>)
@@ -130,14 +173,14 @@ renderSkill name = comm2 "rowlist" (textT name) . renderList
 renderSkillsSection :: forall m. (Monad m) => Skills -> LaTeXT_ m
 renderSkillsSection skills =
     -- TODO: render proficiency seperately
-    cvSection "Languages and Technologies" $
-        itemized
+    cvSection "Languages and Technologies"
+        $ itemized
             [ renderSkill "Programming Languages" $ skills ^. #programmingLanguages
             , renderSkill "Tools" $ skills ^. #tools
             , renderSkill "Languages" $ skills ^. #languages
             ]
 
-renderHeader :: (MonadReader RenderOptions m) => GeneralInfo -> LaTeXT_ m
+renderHeader :: GeneralInfo -> LaTeXT_ (Sem r)
 renderHeader gi = do
     headerC "phonenumber" $ gi ^. #phonenumber
     headerC "address" $ gi ^. #address
@@ -148,88 +191,84 @@ renderHeader gi = do
   where
     headerC n = comm1 n . textT
 
-renderGeneral :: (MonadReader RenderOptions m) => GeneralInfo -> LaTeXT_ m
-renderGeneral gi = do
-    renderAboutSection $ gi ^. #about
-
-renderProject :: forall m. (MonadReader RenderOptions m) => Project -> LaTeXT_ m
-renderProject p = do
-    orientation <- lift $ asks (view #orientation)
-    shouldIncludeProjects <- lift $ asks (view #includeProjects)
-    minPriority <- lift $ asks (view #minimumPriority)
-    excluded <- lift $ asks (view #excludedProjects)
-    let projectPriority =
-            p ^. #priority
-                + case orientation of
-                    Either -> 0
-                    _ ->
-                        if any (isWithinOrientation orientation) (p ^. #technologies)
-                            then 1
-                            else -1
-        shouldSkip =
-            (p ^. #title) `elem` excluded
-                || projectPriority < minPriority
-                || shouldIncludeProjects == None
-    unless shouldSkip $ project do
-        renderBlock (p ^. #description)
-        mapM_ (\o -> newline *> renderBlock o) (p ^. #outcome)
-        when (shouldIncludeProjects == Long) do
-            newline
-            renderSkill "Technologies" (toText <$> p ^. #technologies)
+renderProject :: (Monad m) => Project -> LaTeXT_ m
+renderProject p = project do
+    renderBlock (p ^. #description)
+    mapM_ (\o -> newline *> renderBlock o) (p ^. #outcome)
+    unless (null $ p ^. #technologies) do
+        newline
+        renderSkill "Technologies" (toText <$> p ^. #technologies)
   where
-    renderedLinks :: LaTeXT_ m
-    renderedLinks =
-        fromMaybe pass $
-            (p ^. #links)
-                & viaNonEmpty
-                    ( sequence_
-                        . intersperse ", "
-                        . toList
-                        . fmap (\l -> (comm2 "href" `on` textT) (l ^. #url) (l ^. #title))
-                    )
-    project :: LaTeXT_ m -> LaTeXT_ m
+    renderLinks =
+        fromMaybe pass
+            $ (p ^. #links)
+            & viaNonEmpty
+                ( sequence_
+                    . intersperse ", "
+                    . toList
+                    . fmap (\l -> (comm2 "href" `on` textT) (l ^. #url) (l ^. #title))
+                )
     project content = do
-        comm3 "begin" "project" (textT (p ^. #title)) renderedLinks
+        comm3 "begin" "project" (textT (p ^. #title)) renderLinks
         content
         comm1 "end" "project"
 
-renderWorkExperience :: (MonadReader RenderOptions m) => WorkExperience -> LaTeXT_ m
+renderWorkExperience :: (Monad m) => WorkExperience -> LaTeXT_ m
 renderWorkExperience we = cvSubSection (we ^. #jobTitle) (we ^. #company) duration do
-    shouldIncludeProjects <- lift $ asks (view #includeProjects)
     renderBlock $ we ^. #roleDescription
-    case shouldIncludeProjects of
-        None -> pass
-        _ -> mapM_ renderProject (we ^. #projects)
+    mapM_ renderProject (we ^. #projects)
   where
     duration = (we ^. #start) <> "--" <> fromMaybe "Present" (we ^. #end)
 
-renderEmployment :: (MonadReader RenderOptions m) => [WorkExperience] -> LaTeXT_ m
-renderEmployment ws = cvSection "Employment" $ mapM_ renderWorkExperience ws
+renderEmployment ::
+    (Members '[Reader [WorkExperience]] r) =>
+    LaTeXT_ (Sem r)
+renderEmployment = cvSection "Work Experience" do
+    wes <- lift $ ask @[WorkExperience]
+    unless (null wes) $ mapM_ renderWorkExperience wes
 
-renderPersonalProjects :: (MonadReader RenderOptions m) => [Project] -> LaTeXT_ m
-renderPersonalProjects ps = do
-    shouldIncludeProjects <- lift $ asks @RenderOptions (view #includeProjects)
-    case shouldIncludeProjects of
-        None -> pass
-        _ -> cvSection "Personal Projects" $ mapM_ renderProject ps
+renderProjects ::
+    (Members '[Reader Projects] r) => LaTeXT_ (Sem r)
+renderProjects = do
+    personal' <- lift $ asks @Projects personal
+    professional' <- lift $ asks @Projects professional
+    case (personal', professional') of
+        ([], []) -> pass
+        ([], ps) ->
+            cvSection "Notable Projects" $ mapM_ renderProject ps
+        (ps, []) ->
+            cvSection "Personal Projects" $ mapM_ renderProject ps
+        _ -> cvSection "Notable Projects" do
+            cvSubSection "Professional" "" "" $ mapM_ renderProject professional'
+            cvSubSection "Personal" "" "" $ mapM_ renderProject personal'
 
 renderEducation :: (Monad m) => [Education] -> LaTeXT_ m
 renderEducation es = cvSection "Education" $ forM_ es \e -> do
     let duration = show (e ^. #start) <> "--" <> show (e ^. #end)
     cvSubSection (e ^. #city) (e ^. #school) duration $ textT (e ^. #degree)
 
-renderCVToLatex :: (MonadReader RenderOptions m) => CV -> LaTeXT_ m
+renderCVToLatex ::
+    (Members '[Reader AboutSection, Reader [WorkExperience], Reader Projects] r) =>
+    CV ->
+    LaTeXT_ (Sem r)
 renderCVToLatex cv = do
     documentclass [] "waelcv"
     renderHeader $ cv ^. #generalInfo
     comm1 "begin" "document"
     comm0 "makeheader"
-    renderGeneral $ cv ^. #generalInfo
-    renderEmployment $ cv ^. #workExperience
+    renderAboutSection
+    renderEmployment
     renderEducation $ cv ^. #education
-    renderPersonalProjects $ cv ^. #personalProjects
+    renderProjects
     renderSkillsSection $ cv ^. #generalInfo % #skills
     comm1 "end" "document"
 
 renderCV :: RenderOptions -> CV -> LaTeX
-renderCV opts cv = runReader (snd <$> runLaTeXT (renderCVToLatex cv)) opts
+renderCV opts cv =
+    snd
+        . run
+        . runAboutReader opts cv
+        . runProjectsReader opts cv
+        . runWorkExperiencesReader opts cv
+        . runLaTeXT
+        $ renderCVToLatex cv

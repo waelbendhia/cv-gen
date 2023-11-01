@@ -29,13 +29,24 @@ executable cv-gen
 
   default-extensions:
     NoImplicitPrelude
+    ApplicativeDo
     BlockArguments
     DataKinds
+    DerivingStrategies
+    DerivingVia
     DuplicateRecordFields
+    FlexibleContexts
+    GADTs
+    GeneralizedNewtypeDeriving
+    LambdaCase
     OverloadedLabels
     OverloadedStrings
+    PolyKinds
+    ScopedTypeVariables
+    StrictData
     TemplateHaskell
     TypeFamilies
+    TypeOperators
     UndecidableInstances
 
   build-depends:
@@ -45,9 +56,11 @@ executable cv-gen
     , directory
     , filepath
     , HaTeX
+    , iris
     , optics
     , optics-th
     , optparse-applicative
+    , polysemy
     , process
     , relude
     , template-haskell

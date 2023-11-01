@@ -24,11 +24,6 @@
 
 % Set up the fonts according to options
 \def\mainfontsize{11pt}
-\def\mainfontface{Iosevka Aile}
-
-\DeclareOption{calibri}{%
-  \def\mainfontface{Calibri}
-}
 
 \ProcessOptions\relax
 
@@ -43,17 +38,17 @@
 
 % Color stuff
 \usepackage{xcolor}
-\definecolor{blue}{HTML}{1e66f5}
-\definecolor{white}{HTML}{eff1f5}
-\definecolor{black}{HTML}{4c4f69}
+\definecolor{highlight}{HTML}{1e66f5}
+\definecolor{background}{HTML}{eff1f5}
+\definecolor{foreground}{HTML}{4c4f69}
 \definecolor{subheading}{HTML}{5c5f77}
-\pagecolor{white}
-\color{black}
+\pagecolor{background}
+\color{foreground}
 \hypersetup{
-    colorlinks,
-    linkcolor={blue!50!black},
-    citecolor={blue!50!black},
-    urlcolor={blue!80!black}
+	colorlinks,
+	linkcolor={highlight!50!foreground},
+	citecolor={highlight!50!foreground},
+	urlcolor={highlight!80!foreground}
 }
 
 % Set document margins
@@ -61,8 +56,8 @@
 
 % Set font face
 \usepackage{fontspec}
-\defaultfontfeatures{LetterSpace=-3}
-\setmainfont{\mainfontface}
+\defaultfontfeatures{LetterSpace=-4}
+\setmainfont{Iosevka Aile}
 
 % Remove paragraph indentation
 \usepackage[parfill]{parskip}
@@ -73,11 +68,16 @@
 % Required for ifthenelse statements
 \usepackage{etoolbox}
 
-% Suppress page numbers
-\pagestyle{empty}
+\usepackage{fancyhdr}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[R]{Created using \href{https://github.com/waelbendhia/cv-gen}{CV-Gen}}
+\pagestyle{fancy}
 
 % Flexible tables
-\usepackage{tabu}
+\usepackage{tabularx}
+\setlength{\tabcolsep}{6pt}
+\renewcommand\tabularxcolumn[1]{m{#1}}
 
 % For custom margins
 \usepackage{changepage}
@@ -92,8 +92,8 @@
 \usepackage{microtype}
 
 \DeclareMicrotypeSet*{smallcapsi} {
-  encoding = {OT1,T1,T2A,LY1,OT4,QX,T5,TS1,EU1,EU2},
-  shape = {sc*,si,scit}
+	encoding = {OT1,T1,T2A,LY1,OT4,QX,T5,TS1,EU1,EU2},
+	shape = {sc*,si,scit}
 }
 
 %--------------------------------------------------------------------------------
@@ -102,17 +102,18 @@
 
 \def\namespaceskip{0.575em}
 \def\afterheaderspace{1.1pt}
-\def\beforesummaryspace{10pt}
-\def\beforesectionheaderspace{5pt}
-\def\sectionheadermargin{6pt}
+\def\beforesummaryspace{6pt}
+\def\beforesectionheaderspace{3pt}
 \def\beforesectionheaderhrulespace{2.85pt}
 \def\sectionheaderhrlueheight{0.518pt}
 \def\aftersectionheaderspace{0pt}
 
-\def\aftersubsectionheaderspace{-20.25pt}
+\def\aftersubsectionheaderspace{-18.25pt}
 
-\def\subsectionmargin{9pt}
-\def\projectmargin{12pt}
+\def\summarymargin{6pt}
+\def\sectionheadermargin{6pt}
+\def\subsectionmargin{6pt}
+\def\projectmargin{6pt}
 \def\aftersubsectionspace{2.1pt}
 
 %--------------------------------------------------------------------------------
@@ -133,14 +134,14 @@
 \name{}
 
 \newcommand\printname{
-  \typeout {kokoko}
-  \typeout \spaceskip
-  \spaceskip \namespaceskip \relax
-  \textbf{\LARGE\textls[110]{\@name}}
-  \linebreak
-  \@phonenumber
-  \linebreak
-  \@address
+	\typeout {kokoko}
+	\typeout \spaceskip
+	\spaceskip \namespaceskip \relax
+	\textbf{\LARGE\textls[110]{\@name}}
+	\linebreak
+	\@phonenumber
+	\linebreak
+	\@address
 }
 
 \makeatother
@@ -160,28 +161,37 @@
 \linkedin{}
 
 \newcommand\printcontacts{
-  \begin{small}
-    \begin{tabu} to 1\linewidth { X[r,m] X[l,m] }
-      % \textbf{󰇯 }    & \href{mailto:\@email}{\@email} \\
-      % \textbf{ } & \href{https://linkedin.com/in/\@linkedin}{\@linkedin} \\
-      % \textbf{ }   & \href{https://github.com/\@github}{\@github} \\
-      \textbf{Email}    & \href{mailto:\@email}{\@email} \\
-      \textbf{LinkedIn} & \href{https://linkedin.com/in/\@linkedin}{\@linkedin} \\
-      \textbf{GitHub}   & \href{https://github.com/\@github}{\@github} \\
-    \end{tabu}
-  \end{small}
+	\begin{small}
+		{
+			\setlength{\tabcolsep}{2pt}
+			\begin{tabularx}{180pt}{
+					>{\hsize=42pt\raggedleft\arraybackslash}X >{\hsize=120pt\raggedright\arraybackslash}X
+				}
+				% \textbf{󰇯 }    & \href{mailto:\@email}{\@email} \\
+				% \textbf{ } & \href{https://linkedin.com/in/\@linkedin}{\@linkedin} \\
+				% \textbf{ }   & \href{https://github.com/\@github}{\@github} \\
+				\textbf{Email}    & \href{mailto:\@email}{\@email}                        \\
+				\textbf{LinkedIn} & \href{https://linkedin.com/in/\@linkedin}{\@linkedin} \\
+				\textbf{GitHub}   & \href{https://github.com/\@github}{\@github}          \\
+
+			\end{tabularx}
+		}
+	\end{small}
 }
 
 \makeatother
 
 \makeatletter
 \newcommand\makeheader{
-  \begin{center}
-    \begin{tabu} to 1\textwidth { X[l,m] X[r,m] }
-      \printname & \printcontacts \\
-    \end{tabu}
-  \end{center}
-  \vspace*{\afterheaderspace}
+	\begin{center}
+		\begin{tabularx}{1\textwidth}{
+				>{\raggedright\arraybackslash}X >{\raggedleft\arraybackslash}X
+			}
+			\printname & \vspace*{-50pt}\printcontacts \\
+
+		\end{tabularx}
+	\end{center}
+	\vspace*{\afterheaderspace}
 }
 \makeatother
 
@@ -192,43 +202,52 @@
 % IntroBlock
 \makeatletter
 \newenvironment{summary}[0]{
-  \vspace*{\beforesummaryspace}
-}{}
+	\vspace*{\beforesummaryspace}
+	\begin{adjustwidth}{\summarymargin}{\summarymargin}
+		}{
+	\end{adjustwidth}
+}
 \makeatother
 
 % Lists
 \makeatletter
 \newcommand{\rowlist}[2]{
-  \textbf{\color{subheading}#1: }{#2}
+	\textbf{\color{subheading}#1: }{#2}
 }{}
 \makeatother
 
 % Print a section header
 \makeatletter
 \newenvironment{cvsection}[1]{
-  \vspace*{\beforesectionheaderspace}
-  % Set text margins to equal \tabcolsep (6pt by default)
-  \begin{adjustwidth}{\sectionheadermargin}{\sectionheadermargin}
-    \textbf{\color{subheading}#1}
-  \end{adjustwidth}
-  \vspace*{\beforesectionheaderhrulespace}
-  \hrule height \sectionheaderhrlueheight
-  \vspace*{\aftersectionheaderspace}
+	\vspace*{\beforesectionheaderspace}
+	% Set text margins to equal \tabcolsep (6pt by default)
+	\begin{color}{subheading}
+		\begin{adjustwidth}{\sectionheadermargin}{\sectionheadermargin}
+			\textbf{#1}
+		\end{adjustwidth}
+		\vspace*{\beforesectionheaderhrulespace}
+		\hrule height \sectionheaderhrlueheight
+	\end{color}
+	\vspace*{\aftersectionheaderspace}
 }{}
 \makeatother
-
 
 % Project body
 \makeatletter
 \newenvironment{project}[2]{
-  \par
-  \begin{tabu} to 1\linewidth { X[l,p] X[r,p] }
-    \textbf{\color{subheading}#1} & #2 \\
-  \end{tabu}
-  \vspace*{\aftersubsectionheaderspace}
-  \begin{adjustwidth}{\projectmargin}{\projectmargin}
-}{
-  \end{adjustwidth}
+	\par
+	\begin{color}{subheading}
+		\begin{tabularx}{1\linewidth}{
+				>{\raggedright\arraybackslash}X >{\raggedleft\arraybackslash}X
+			}
+			\textbf{#1} & #2 \\
+
+		\end{tabularx}
+	\end{color}
+	\vspace*{\aftersubsectionheaderspace}
+	\begin{adjustwidth}{\projectmargin}{\projectmargin}
+		}{
+	\end{adjustwidth}
 }
 \makeatother
 
@@ -236,17 +255,22 @@
 \makeatletter
 
 \newenvironment{cvsubsection}[3]{
-  \color{subheading}
-  \begin{tabu} to 1\textwidth { X[l,p] X[c,p] X[r,p] }
-    \textbf{#1} & \textbf{#2} & \textbf{#3} \\
-  \end{tabu}
-  % Add space according to the specidied number of lines
-  \vspace*{\aftersubsectionheaderspace}
-  \begin{adjustwidth}{\subsectionmargin}{\subsectionmargin}
-}
-{
-  \end{adjustwidth}
-  \vspace*{\aftersubsectionspace}
+	\begin{color}{subheading}
+		\begin{tabularx}{1\textwidth}{
+				>{\raggedright\arraybackslash}X
+				>{\centering\arraybackslash}X
+				>{\raggedleft\arraybackslash}X
+			}
+			\textbf{#1} & \textbf{#2} & \textbf{#3} \\
+
+		\end{tabularx}
+	\end{color}
+	% Add space according to the specidied number of lines
+	\vspace*{\aftersubsectionheaderspace}
+	\begin{adjustwidth}{\subsectionmargin}{\subsectionmargin}
+		}{
+	\end{adjustwidth}
+	\vspace*{\aftersubsectionspace}
 }
 \makeatother
 
