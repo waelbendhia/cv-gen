@@ -90,12 +90,12 @@ makeFieldLabelsNoPrefix ''Project
 instance FromJSON Project where
     parseJSON = withObject "Project" \o ->
         Project
-            <$> o .: "title"
-            <*> o .:? "priority" .!= 1
-            <*> o .: "description"
-            <*> o .: "technologies"
-            <*> o .:? "links" .!= []
-            <*> o .:? "outcome"
+            <$> (o .: "title")
+            <*> (o .:? "priority" .!= 1)
+            <*> (o .: "description")
+            <*> (o .: "technologies")
+            <*> (o .:? "links" .!= [])
+            <*> (o .:? "outcome")
 
 data WorkExperience = WorkExperience
     { company :: Text
@@ -166,3 +166,16 @@ data CV = CV
 
 makeFieldLabelsNoPrefix ''CV
 deriveFromJSON defaultOptions ''CV
+
+instance
+    (k ~ A_Getter, a ~ [Project], b ~ [Project]) =>
+    LabelOptic "professionalProjects" k CV CV a b
+    where
+    labelOptic = to \cv ->
+        join $ cv ^.. #workExperience % traversed % #projects
+
+instance
+    (k ~ A_Getter, a ~ [Project], b ~ [Project]) =>
+    LabelOptic "projects" k CV CV a b
+    where
+    labelOptic = to \cv -> cv ^. #professionalProjects <> cv ^. #personalProjects

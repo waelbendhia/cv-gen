@@ -3,14 +3,16 @@ module CV.Latex (
     renderCV,
     RenderOptions (..),
     IncludeOption (..),
-    AboutLength (..),
+    SummaryLength (..),
     ProjectLength (..),
+    ProjectSection (..),
     includeOptionFromText,
     projectSectionFromText,
     defaultOptions,
 ) where
 
 import CV.Types
+import Data.List (nub)
 import Data.Text qualified as Text
 import Optics
 import Polysemy
@@ -20,7 +22,7 @@ import Text.LaTeX hiding (lines, unlines, (&))
 import Text.LaTeX.Base.Class
 
 data IncludeOption = None | Short | Long
-    deriving (Show, Eq)
+    deriving (Show, Eq, Enum, Bounded)
 
 includeOptionFromText :: (MonadFail f) => Text -> f IncludeOption
 includeOptionFromText text =
@@ -30,7 +32,7 @@ includeOptionFromText text =
         "none" -> pure None
         t -> fail $ "Unknown IncludeOption value " <> toString t
 
-data ProjectSection = InWorkExperience | Standalone deriving (Show, Eq)
+data ProjectSection = InWorkExperience | Standalone deriving (Show, Eq, Bounded, Enum)
 
 projectSectionFromText :: (MonadFail m) => Text -> m ProjectSection
 projectSectionFromText text =
@@ -43,14 +45,15 @@ projectSectionFromText text =
         "seperate" -> pure Standalone
         t -> fail $ "Unknown ProjectSection value " <> toString t
 
-newtype AboutLength = AboutLength IncludeOption deriving (Show)
+newtype SummaryLength = SummaryLength IncludeOption deriving (Show)
 newtype ProjectLength = ProjectLength IncludeOption deriving (Show)
 
 data RenderOptions = RenderOptions
-    { aboutLength :: AboutLength
+    { summaryLength :: SummaryLength
     , projectLength :: ProjectLength
     , minimumPriority :: Int
     , projectSection :: ProjectSection
+    , selectedProjects :: [Text]
     }
     deriving (Show)
 
@@ -59,24 +62,31 @@ makeFieldLabelsNoPrefix ''RenderOptions
 defaultOptions :: RenderOptions
 defaultOptions =
     RenderOptions
-        { aboutLength = coerce Short
+        { summaryLength = coerce Short
         , projectLength = coerce Short
         , minimumPriority = 2
         , projectSection = Standalone
+        , selectedProjects = []
         }
 
-newtype AboutSection = AboutSection (Maybe Text)
+newtype SummarySection = SummarySection (Maybe Text)
 
-runAboutReader :: RenderOptions -> CV -> Sem (Reader AboutSection : r) b -> Sem r b
-runAboutReader opts cv =
-    let about' = cv ^. #generalInfo % #about
-     in runReader
-            ( AboutSection
-                case opts ^. #aboutLength % coerced of
-                    None -> Nothing
-                    Long -> about' ^. #long
-                    Short -> about' ^. #short
-            )
+runAboutReader :: RenderOptions -> CV -> Sem (Reader SummarySection : r) b -> Sem r b
+runAboutReader opts cv = runReader $ SummarySection case opts ^. #summaryLength % coerced of
+    None -> Nothing
+    Long -> about' ^. #long
+    Short -> about' ^. #short
+  where
+    about' = cv ^. #generalInfo % #about
+
+filterProjects :: RenderOptions -> [Project] -> [Project]
+filterProjects opts =
+    filter \p ->
+        (p ^. #priority >= opts ^. #minimumPriority)
+            && ( null (opts ^. #selectedProjects)
+                    || (p ^. #title)
+                    `elem` (opts ^. #selectedProjects)
+               )
 
 runWorkExperiencesReader ::
     RenderOptions ->
@@ -85,7 +95,9 @@ runWorkExperiencesReader ::
     Sem r a
 runWorkExperiencesReader opts cv =
     runReader
-        (withLen $ filterProjects $ cv ^. #workExperience)
+        $ (cv ^. #workExperience)
+        & withLen
+        & (traversed % #projects %~ filterProjects opts)
   where
     withLen =
         case (opts ^. #projectLength % coerced, opts ^. #projectSection) of
@@ -93,8 +105,6 @@ runWorkExperiencesReader opts cv =
             (None, _) -> traversed % #projects .~ []
             (Short, _) -> traversed % #projects % traversed % #technologies .~ []
             (Long, _) -> id
-    filterProjects =
-        traversed % #projects %~ filter \p -> p ^. #priority >= opts ^. #minimumPriority
 
 data Projects = Projects
     { personal :: [Project]
@@ -104,26 +114,19 @@ data Projects = Projects
 runProjectsReader :: RenderOptions -> CV -> Sem (Reader Projects : r) a -> Sem r a
 runProjectsReader opts cv = runReader projects
   where
-    filterByPriority = filter \p -> p ^. #priority >= opts ^. #minimumPriority
     withLen ps = case opts ^. #projectLength % coerced of
         None -> []
         Short -> ps & traversed % #technologies .~ []
         Long -> ps
     projects =
-        (Projects `on` withLen . filterByPriority)
+        (Projects `on` withLen . filterProjects opts)
             (cv ^. #personalProjects)
             case opts ^. #projectSection of
                 InWorkExperience -> []
-                Standalone -> join $ cv ^.. #workExperience % traversed % #projects
+                Standalone -> cv ^. #professionalProjects
 
 textT :: (LaTeXC l) => Text -> l
 textT = fromString . toString
-
-summary :: (Monad m) => LaTeXT_ m -> LaTeXT_ m
-summary content = do
-    comm1 "begin" "summary"
-    content
-    comm1 "end" "summary"
 
 cvSection :: (Monad m) => Text -> LaTeXT_ m -> LaTeXT_ m
 cvSection name content = do
@@ -156,10 +159,16 @@ renderBlock t = lByl $ lines t
             lByl xs
     lByl [] = pass
 
-renderAboutSection :: (Members '[Reader AboutSection] r) => LaTeXT_ (Sem r)
-renderAboutSection = do
-    (aboutSection :: Maybe Text) <- lift $ asks @AboutSection coerce
+renderSummarySection :: forall r. (Members '[Reader SummarySection] r) => LaTeXT_ (Sem r)
+renderSummarySection = do
+    (aboutSection :: Maybe Text) <- lift $ asks @SummarySection coerce
     mapM_ (summary . renderBlock) aboutSection
+  where
+    summary :: LaTeXT_ (Sem r) -> LaTeXT_ (Sem r)
+    summary content = do
+        comm1 "begin" "summary"
+        content
+        comm1 "end" "summary"
 
 itemized :: (Monad m) => [LaTeXT_ m] -> LaTeXT_ m
 itemized = itemize . mapM_ (comm0 "item" *>)
@@ -168,7 +177,7 @@ renderSkill :: forall m. (Monad m) => Text -> [Text] -> LaTeXT_ m
 renderSkill name = comm2 "rowlist" (textT name) . renderList
   where
     renderList :: [Text] -> LaTeXT_ m
-    renderList l = sequence_ $ intersperse ", " $ textT <$> l
+    renderList l = sequence_ $ intersperse ", " $ textT <$> nub l
 
 renderSkillsSection :: forall m. (Monad m) => Skills -> LaTeXT_ m
 renderSkillsSection skills =
@@ -248,7 +257,7 @@ renderEducation es = cvSection "Education" $ forM_ es \e -> do
     cvSubSection (e ^. #city) (e ^. #school) duration $ textT (e ^. #degree)
 
 renderCVToLatex ::
-    (Members '[Reader AboutSection, Reader [WorkExperience], Reader Projects] r) =>
+    (Members '[Reader SummarySection, Reader [WorkExperience], Reader Projects] r) =>
     CV ->
     LaTeXT_ (Sem r)
 renderCVToLatex cv = do
@@ -256,10 +265,10 @@ renderCVToLatex cv = do
     renderHeader $ cv ^. #generalInfo
     comm1 "begin" "document"
     comm0 "makeheader"
-    renderAboutSection
+    renderSummarySection
     renderEmployment
-    renderEducation $ cv ^. #education
     renderProjects
+    renderEducation $ cv ^. #education
     renderSkillsSection $ cv ^. #generalInfo % #skills
     comm1 "end" "document"
 

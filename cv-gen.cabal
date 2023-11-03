@@ -17,12 +17,13 @@ extra-doc-files: CHANGELOG.md
 -- extra-source-files:
 
 common warnings
-  ghc-options: -Wall
+  ghc-options: -Wall -threaded
 
 executable cv-gen
   import:             warnings
   main-is:            Main.hs
   other-modules:
+    CV.InteractiveApp
     CV.Latex
     CV.LuaLatex
     CV.Types
@@ -52,11 +53,11 @@ executable cv-gen
   build-depends:
     , aeson
     , base                  ^>=4.16.4.0
+    , brick
     , bytestring
     , directory
     , filepath
     , HaTeX
-    , iris
     , optics
     , optics-th
     , optparse-applicative
@@ -64,6 +65,7 @@ executable cv-gen
     , process
     , relude
     , template-haskell
+    , vty
     , yaml
 
   hs-source-dirs:     app

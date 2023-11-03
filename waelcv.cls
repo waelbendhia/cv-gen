@@ -69,9 +69,9 @@
 \usepackage{etoolbox}
 
 \usepackage{fancyhdr}
-\fancyhf{}
 \renewcommand{\headrulewidth}{0pt}
 \fancyfoot[R]{Created using \href{https://github.com/waelbendhia/cv-gen}{CV-Gen}}
+\fancyhf{}
 \pagestyle{fancy}
 
 % Flexible tables
@@ -236,18 +236,20 @@
 \makeatletter
 \newenvironment{project}[2]{
 	\par
-	\begin{color}{subheading}
-		\begin{tabularx}{1\linewidth}{
-				>{\raggedright\arraybackslash}X >{\raggedleft\arraybackslash}X
-			}
-			\textbf{#1} & #2 \\
+	\begin{samepage}
+		\begin{color}{subheading}
+			\begin{tabularx}{1\linewidth}{
+					>{\raggedright\arraybackslash}X >{\raggedleft\arraybackslash}X
+				}
+				\textbf{#1} & #2 \\
 
-		\end{tabularx}
-	\end{color}
-	\vspace*{\aftersubsectionheaderspace}
-	\begin{adjustwidth}{\projectmargin}{\projectmargin}
-		}{
-	\end{adjustwidth}
+			\end{tabularx}
+		\end{color}
+		\vspace*{\aftersubsectionheaderspace}
+		\begin{adjustwidth}{\projectmargin}{\projectmargin}
+			}{
+		\end{adjustwidth}
+	\end{samepage}
 }
 \makeatother
 
